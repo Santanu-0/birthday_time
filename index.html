@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRISTI // INFINITE</title>
+    <style>
+        body { margin: 0; background: #000; overflow-x: hidden; font-family: 'Inter', sans-serif; }
+        canvas { display: block; position: fixed; top: 0; left: 0; }
+        
+        #page-1, #page-2, #page-3 {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        #page-2, #page-3 { display: none; }
+
+        .interface {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .hero-text {
+            font-size: 15vw;
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            color: white;
+            mix-blend-mode: difference;
+            opacity: 0.1;
+        }
+
+        .oval-btn {
+            padding: 18px 45px;
+            border-radius: 100px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.5s ease;
+            pointer-events: auto;
+            margin-top: 20px;
+        }
+
+        .oval-btn:hover {
+            background: white;
+            color: black;
+            box-shadow: 0 0 30px rgba(255,255,255,0.4);
+        }
+
+        /* PAGE 3 STYLE - RANGOLI BG */
+        #page-3 {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 80px 20px;
+            z-index: 200;
+        }
+
+        #rangoli-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            width: 100%;
+            max-width: 1100px;
+            margin-bottom: 80px;
+            z-index: 10;
+        }
+
+        .scratch-card {
+            height: 380px;
+            perspective: 1000px;
+            cursor: pointer;
+            opacity: 0; /* Handled by GSAP */
+            transform: translateY(50px);
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+
+        .scratch-card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 25px;
+            overflow: hidden;
+        }
+
+        .card-front {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            letter-spacing: 4px;
+            font-size: 14px;
+            font-weight: 700;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .card-back {
+            background: #1a1a1a;
+            transform: rotateY(180deg);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .card-image {
+            width: 100%;
+            height: 65%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: #222;
+        }
+
+        .card-content {
+            padding: 15px;
+            text-align: center;
+            color: #fff;
+            font-size: 13px;
+            line-height: 1.4;
+            background: rgba(0,0,0,0.8);
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #wish-container { text-align: center; color: white; opacity: 0; padding: 0 20px;}
+    </style>
+</head>
+<body>
+
+    <div id="page-1">
+        <div id="gl-container"></div>
+        <div class="interface">
+            <h1 class="hero-text" id="name">SRISTI</h1>
+            <button class="oval-btn" onclick="goToPage2()">Open My Heart</button>
+        </div>
+    </div>
+
+    <div id="page-2">
+        <div class="interface">
+            <div id="wish-container">
+                <h1 style="font-weight:100; font-size: 8vw; letter-spacing: 15px;">SRISTI</h1>
+                <p style="color:rgba(255,255,255,0.8); max-width: 600px; font-size: 1.2rem;">
+                    "In the map of my life, the brightest spots are the ones where you were standing by my side. You aren't just a best friend; you are the sister I chose."
+                </p>
+                <button class="oval-btn" onclick="goToPage3()">View Our Memories</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-3">
+        <canvas id="rangoli-canvas"></canvas>
+        <h2 style="color:white; letter-spacing:15px; font-weight:100; margin-bottom: 50px; z-index: 10;">THE VAULT</h2>
+        <div class="cards-grid" id="cards-grid"></div>
+        <button class="oval-btn" style="position: relative; margin-bottom: 50px;">Get Love</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.7.1/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+
+    <script>
+        /** PAGE 1 & 2 LOGIC (STRICTLY KEPT) **/
+        let scene, camera, renderer, starSystem;
+        let mouseX = 0, mouseY = 0;
+
+        function initThree() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 1, 1000);
+            camera.position.z = 400;
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('gl-container').appendChild(renderer.domElement);
+            const geometry = new THREE.BufferGeometry();
+            const vertices = []; const colors = [];
+            for (let i = 0; i < 15000; i++) {
+                vertices.push(THREE.MathUtils.randFloatSpread(1000), THREE.MathUtils.randFloatSpread(1000), THREE.MathUtils.randFloatSpread(1000));
+                const c = new THREE.Color();
+                if (Math.random() > 0.9) c.setHex(0xffffff); else if (Math.random() > 0.5) c.setHex(0x7000ff); else c.setHex(0x00d4ff);
+                colors.push(c.r, c.g, c.b);
+            }
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            starSystem = new THREE.Points(geometry, new THREE.PointsMaterial({size: 2, vertexColors: true, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending}));
+            scene.add(starSystem);
+            window.addEventListener('mousemove', (e) => {
+                mouseX = (e.clientX - window.innerWidth / 2);
+                mouseY = (e.clientY - window.innerHeight / 2);
+                document.getElementById('name').style.opacity = Math.min(0.5, Math.max(0.1, 1 - (Math.abs(mouseX) / 500)));
+            });
+        }
+
+        function animateThree() {
+            if(document.getElementById('page-1').style.display === 'none') return;
+            requestAnimationFrame(animateThree);
+            starSystem.rotation.x += 0.0005; starSystem.rotation.y += 0.001;
+            starSystem.position.x += (mouseX * 0.2 - starSystem.position.x) * 0.05;
+            starSystem.position.y += (-mouseY * 0.2 - starSystem.position.y) * 0.05;
+            renderer.render(scene, camera);
+        }
+
+        /** PAGE 2: P5.JS **/
+        let particles = [];
+        function setup() {
+            let cnv = createCanvas(windowWidth, windowHeight);
+            cnv.parent('page-2');
+            for (let i = 0; i < 800; i++) particles.push(new FlowParticle());
+            background(0); noLoop();
+        }
+        function draw() {
+            background(0, 20);
+            for (let p of particles) { p.move(); p.display(); p.checkEdge(); }
+        }
+        class FlowParticle {
+            constructor() {
+                this.pos = createVector(random(width), random(height));
+                this.vel = createVector(0,0); this.acc = createVector(0,0);
+                this.maxSpeed = random(1,2); this.h = random(180,260);
+            }
+            move() {
+                let n = noise(this.pos.x * 0.01, this.pos.y * 0.01, frameCount * 0.002);
+                this.acc.set(cos(TWO_PI * n), sin(TWO_PI * n));
+                this.vel.add(this.acc); this.vel.limit(this.maxSpeed);
+                this.pos.add(this.vel); this.acc.mult(0);
+            }
+            display() { stroke(this.h, 100, 255, 150); strokeWeight(1.5); point(this.pos.x, this.pos.y); }
+            checkEdge() { if (this.pos.x < 0) this.pos.x = width; if (this.pos.x > width) this.pos.x = 0; if (this.pos.y < 0) this.pos.y = height; if (this.pos.y > height) this.pos.y = 0; }
+        }
+
+        /** PAGE 3: RANGOLI BACKGROUND LOGIC **/
+        const rangoliCanvas = document.getElementById('rangoli-canvas');
+        const ctx = rangoliCanvas.getContext('2d');
+        let rAngle = 0;
+
+        function initRangoli() {
+            rangoliCanvas.width = window.innerWidth;
+            rangoliCanvas.height = window.innerHeight;
+        }
+
+        function drawRangoli() {
+            if(document.getElementById('page-3').style.display !== 'flex') return;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, rangoliCanvas.width, rangoliCanvas.height);
+            
+            let centerX = rangoliCanvas.width / 2 + (mouseX * 0.5);
+            let centerY = rangoliCanvas.height / 2 + (mouseY * 0.5);
+            
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            rAngle += 0.01;
+            ctx.rotate(rAngle);
+
+            for (let i = 0; i < 12; i++) {
+                ctx.rotate(Math.PI / 6);
+                ctx.strokeStyle = `hsl(${(rAngle * 50) % 360}, 70%, 60%)`;
+                ctx.beginPath();
+                ctx.arc(100, 0, 50, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(200, 0);
+                ctx.stroke();
+            }
+            ctx.restore();
+            requestAnimationFrame(drawRangoli);
+        }
+
+        /** NAVIGATION & CARDS **/
+        function goToPage2() {
+            gsap.to("#page-1", { opacity: 0, duration: 1, onComplete: () => {
+                document.getElementById('page-1').style.display = 'none';
+                document.getElementById('page-2').style.display = 'block';
+                loop();
+                gsap.to("#wish-container", { opacity: 1, duration: 2, y: -20 });
+            }});
+        }
+
+        function goToPage3() {
+            noLoop();
+            document.getElementById('page-2').style.display = 'none';
+            document.getElementById('page-3').style.display = 'flex';
+            initRangoli();
+            drawRangoli();
+            initCards();
+        }
+
+        const memories = [
+            { img: "1.jpg", text: "Laughter and Joy.", color: "linear-gradient(45deg, #ff0070, #ff7000)" },
+            { img: "2.jpg", text: "Captured in time.", color: "linear-gradient(45deg, #7000ff, #00d4ff)" },
+            { img: "3.jpg", text: "Adventure awaits.", color: "linear-gradient(45deg, #00ff87, #60efff)" },
+            { img: "4.jpg", text: "Deep talks.", color: "linear-gradient(45deg, #f093fb, #f5576c)" },
+            { img: "5.jpg", text: "Chosen sister.", color: "linear-gradient(45deg, #4facfe, #00f2fe)" },
+            { img: "6.jpg", text: "Always together.", color: "linear-gradient(45deg, #fa709a, #fee140)" }
+        ];
+
+        function initCards() {
+            const grid = document.getElementById('cards-grid');
+            grid.innerHTML = ''; 
+            memories.forEach((m, i) => {
+                const card = document.createElement('div');
+                card.className = 'scratch-card';
+                // Using template strings correctly for background image
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-front" style="background: ${m.color}">REVEAL</div>
+                        <div class="card-back">
+                            <div class="card-image" style="background-image: url('${m.img}')"></div>
+                            <div class="card-content">${m.text}</div>
+                        </div>
+                    </div>
+                `;
+                card.onclick = function() { this.classList.toggle('flipped'); };
+                grid.appendChild(card);
+                
+                // FIXED ANIMATION: Cards slide up and fade in one by one
+                gsap.to(card, { opacity: 1, y: 0, duration: 1, delay: i * 0.2, ease: "power4.out" });
+            });
+        }
+
+        initThree();
+        animateThree();
+    </script>
+</body>
+</html>
